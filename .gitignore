@@ -1,0 +1,16 @@
+# Secrets - real VPNBook credentials, never commit
+vpnbook.auth
+
+# Runtime state (PIDs, logs, live config, benchmark cache)
+.run/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Old/duplicate config dumps, not part of the documented setup
+disabled/
+ovpn_new_files_14_sep/
+
+# Unrelated debug dump
+trongstream.fr

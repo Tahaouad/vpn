@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=VPN FR
+Comment=Tray control for the vpn-fr auto-failover VPN
+Exec=/usr/bin/python3 /home/taha-omnidoc/projects/personal/vpn/gui/vpn_tray.py
+Icon=network-vpn-symbolic
+Terminal=false
+Categories=Network;
+X-GNOME-Autostart-enabled=true
