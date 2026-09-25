@@ -15,31 +15,43 @@ hang once all traffic is redirected into the tunnel.
 
 - `bash`, `curl`, and `openvpn` (Debian/Ubuntu: `sudo apt install openvpn curl`)
 - `sudo` rights — bringing up a tunnel needs root
+- `google-chrome` or `chromium`, only for the credentials auto-fetch (see below)
 
 ## Setup
 
-1. Get the current VPNBook free credentials: <https://www.vpnbook.com/freevpn>
-   (they rotate the password regularly).
-2. Create the auth file:
+Nothing to do — just run `./vpn-fr.sh`. On a first run it bootstraps itself:
 
-   ```bash
-   cp vpnbook.auth.example vpnbook.auth
-   $EDITOR vpnbook.auth      # line 1: username, line 2: password
-   chmod 600 vpnbook.auth
-   ```
+- no `.ovpn` configs in this folder → `fetch-vpnbook-configs.sh` downloads
+  them straight from VPNBook's config-generator API.
+- no `vpnbook.auth` → `fetch-vpnbook-creds.sh` scrapes the current free
+  username/password from <https://www.vpnbook.com/freevpn/openvpn> (needs
+  `google-chrome` or `chromium`, since that page renders the credentials
+  client-side).
 
-VPNBook rotates this password every 1-2 weeks; when it does, `openvpn.log`
-shows `AUTH_FAILED`. `vpn-fr.sh` tries to recover on its own (see below), but
-you can also refresh it by hand:
+VPNBook rotates the password every 1-2 weeks; when it does, `openvpn.log`
+shows `AUTH_FAILED` and `vpn-fr.sh` re-runs the same auto-fetch on its own
+mid-connection to recover.
+
+If you'd rather not depend on Chrome, or the auto-fetch ever breaks because
+VPNBook reshapes their pages, do it by hand instead:
+
+```bash
+./fetch-vpnbook-configs.sh                    # (re)download the .ovpn files
+cp vpnbook.auth.example vpnbook.auth
+$EDITOR vpnbook.auth      # line 1: username, line 2: password — get them from
+                          # https://www.vpnbook.com/freevpn
+chmod 600 vpnbook.auth
+```
 
 ```bash
 ./fetch-vpnbook-creds.sh          # scrapes vpnbook.com and updates vpnbook.auth
 ./fetch-vpnbook-creds.sh --print  # just print what it found, don't write
 ```
 
-It's a best-effort headless-Chrome scraper (needs `google-chrome` or
-`chromium`) and can break if VPNBook reshapes their page — it never touches
-`vpnbook.auth` unless it got two plausible values back.
+Both fetch scripts are conservative: `fetch-vpnbook-creds.sh` never touches
+`vpnbook.auth` unless it got two plausible values back, and
+`fetch-vpnbook-configs.sh` only writes a file that actually looks like an
+OpenVPN client config.
 
 ## Usage
 

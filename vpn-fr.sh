@@ -89,12 +89,34 @@ as_root() {
 }
 
 check_auth() {
-    [ -f "$AUTH_FILE" ] || die "Missing $AUTH_FILE — create it with two lines: your VPNBook username on line 1, password on line 2 (current credentials: https://www.vpnbook.com/freevpn)."
+    if [ ! -f "$AUTH_FILE" ]; then
+        local script="$SCRIPT_DIR/fetch-vpnbook-creds.sh"
+        if [ -x "$script" ]; then
+            say "No $AUTH_FILE yet — fetching current VPNBook credentials..."
+            "$script" "$AUTH_FILE" \
+                || die "Auto-fetch failed. Create $AUTH_FILE by hand: two lines, username then password (current credentials: https://www.vpnbook.com/freevpn)."
+        else
+            die "Missing $AUTH_FILE — create it with two lines: your VPNBook username on line 1, password on line 2 (current credentials: https://www.vpnbook.com/freevpn)."
+        fi
+    fi
     if [ "$(stat -c '%a' "$AUTH_FILE")" != "600" ]; then
         chmod 600 "$AUTH_FILE" || true
     fi
     [ "$(wc -l < "$AUTH_FILE")" -ge 2 ] || [ "$(wc -c < "$AUTH_FILE")" -gt 0 ] \
         || die "$AUTH_FILE looks empty — it needs username on line 1 and password on line 2."
+}
+
+check_configs() {
+    list_configs | grep -q . && return 0
+    local script="$SCRIPT_DIR/fetch-vpnbook-configs.sh"
+    if [ -x "$script" ]; then
+        say "No .ovpn configs in $CONFIG_DIR yet — fetching from VPNBook..."
+        "$script" "$CONFIG_DIR" \
+            || die "Auto-fetch failed. Download configs by hand: https://www.vpnbook.com/freevpn/openvpn"
+    else
+        die "No .ovpn configs in $CONFIG_DIR — download some: https://www.vpnbook.com/freevpn/openvpn"
+    fi
+    list_configs | grep -q . || die "Still no .ovpn configs in $CONFIG_DIR after fetching."
 }
 
 # raw trace output (key=value lines), empty on failure
@@ -326,6 +348,7 @@ cmd_start() {
     done
 
     mkdir -p "$RUN_DIR"
+    check_configs
     check_auth
     need_root
     rm -f "$STOP_FLAG"
@@ -394,7 +417,7 @@ cmd_status() {
 }
 
 cmd_test() {
-    mkdir -p "$RUN_DIR"; check_auth; need_root
+    mkdir -p "$RUN_DIR"; check_configs; check_auth; need_root
     run_bench
     stop_openvpn >/dev/null 2>&1 || true
     echo
